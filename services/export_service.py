@@ -1,5 +1,6 @@
-"""Excel 导出服务"""
+"""Excel / CSV 导出服务"""
 
+import csv
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
@@ -119,6 +120,42 @@ class ExportService:
         """获取默认导出文件名"""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         return f"发票数据_{timestamp}.xlsx"
+    
+    def export_to_csv(
+        self,
+        invoices: list[Invoice],
+        output_path: str,
+    ) -> bool:
+        """导出发票数据到 CSV"""
+        try:
+            headers = [col[1] for col in TABLE_COLUMNS if col[0] != 'id']
+            
+            with open(output_path, 'w', newline='', encoding='utf-8-sig') as f:
+                writer = csv.writer(f)
+                writer.writerow(headers)
+                
+                for invoice in invoices:
+                    writer.writerow([
+                        invoice.business_type,
+                        invoice.invoice_type,
+                        invoice.invoice_number,
+                        invoice.invoice_date,
+                        invoice.buyer_name,
+                        invoice.seller_name,
+                        f"{invoice.amount_without_tax:.2f}",
+                        f"{invoice.tax_amount:.2f}",
+                        f"{invoice.total_amount:.2f}",
+                        invoice.reimbursement_status,
+                        invoice.status,
+                        invoice.remark,
+                    ])
+            
+            logger.info(f"CSV 导出成功: {output_path}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"CSV 导出失败: {e}")
+            return False
 
 
 # 全局导出服务实例

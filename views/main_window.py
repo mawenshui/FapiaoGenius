@@ -124,6 +124,16 @@ class MainWindow(QMainWindow):
         # 工具菜单
         tools_menu = menu_bar.addMenu("工具(&T)")
         
+        backup_action = QAction("💾 备份数据...", self)
+        backup_action.triggered.connect(self._on_backup)
+        tools_menu.addAction(backup_action)
+        
+        restore_action = QAction("📂 恢复数据...", self)
+        restore_action.triggered.connect(self._on_restore)
+        tools_menu.addAction(restore_action)
+        
+        tools_menu.addSeparator()
+        
         clear_action = QAction("清空数据库...", self)
         clear_action.triggered.connect(lambda: self._invoice_page._on_clear_db())
         tools_menu.addAction(clear_action)
@@ -175,7 +185,7 @@ class MainWindow(QMainWindow):
         status_bar.addWidget(self._status_left)
         
         # 右侧信息
-        self._status_right = QLabel("v1.3.0")
+        self._status_right = QLabel("v1.4.0")
         status_bar.addPermanentWidget(self._status_right)
         
         status_bar.setStyleSheet("""
@@ -241,16 +251,19 @@ class MainWindow(QMainWindow):
             self,
             "关于",
             "<h3>智票通</h3>"
-            "<p>版本: 1.3.0</p>"
+            "<p>版本: 1.4.0</p>"
             "<p>一款基于 AI 的智能发票识别与管理工具</p>"
             "<p>支持 XML、PDF、OFD 格式发票自动识别</p>"
             "<hr>"
             "<p>功能特点:</p>"
             "<ul>"
-            "<li>多格式发票自动识别</li>"
+            "<li>多格式发票自动识别 + OCR 扫描件支持</li>"
             "<li>AI 学习新发票格式</li>"
             "<li>智能凑票功能</li>"
-            "<li>Excel 导出</li>"
+            "<li>统计报表 + 图表分析</li>"
+            "<li>数据备份与恢复</li>"
+            "<li>Excel / CSV 导出</li>"
+            "<li>主题切换（浅色/深色）</li>"
             "</ul>"
         )
     
@@ -267,7 +280,7 @@ class MainWindow(QMainWindow):
         
         self._status_left.setText("正在检查更新...")
         
-        result = update_service.check_update("1.3.0")
+        result = update_service.check_update("1.4.0")
         
         if result['error']:
             QMessageBox.warning(self, "检查失败", f"无法检查更新:\n{result['error']}")
@@ -288,3 +301,41 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "检查更新", "当前已是最新版本 ✓")
         
         self._status_left.setText("就绪")
+    
+    def _on_backup(self):
+        """备份数据"""
+        from PyQt5.QtWidgets import QFileDialog
+        from services.backup_service import backup_service
+        
+        path, _ = QFileDialog.getSaveFileName(
+            self, "备份数据", backup_service.get_default_backup_name(),
+            "ZIP 文件 (*.zip)"
+        )
+        if path:
+            result = backup_service.create_backup(path)
+            if result['success']:
+                QMessageBox.information(self, "备份成功", result['message'])
+            else:
+                QMessageBox.warning(self, "备份失败", result['message'])
+    
+    def _on_restore(self):
+        """恢复数据"""
+        from PyQt5.QtWidgets import QFileDialog
+        from services.backup_service import backup_service
+        
+        path, _ = QFileDialog.getOpenFileName(
+            self, "选择备份文件", "", "ZIP 文件 (*.zip)"
+        )
+        if path:
+            reply = QMessageBox.warning(
+                self, "确认恢复",
+                "恢复将覆盖当前的数据库和规则文件！\n\n"
+                "系统会自动备份当前数据，是否继续？",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                result = backup_service.restore_backup(path)
+                if result['success']:
+                    QMessageBox.information(self, "恢复成功", result['message'])
+                else:
+                    QMessageBox.warning(self, "恢复失败", result['message'])

@@ -98,7 +98,10 @@ class InvoicePage(QWidget):
         self._toolbar.import_file.connect(self._on_import_file)
         self._toolbar.import_folder.connect(self._on_import_folder)
         self._toolbar.export_excel.connect(self._on_export_excel)
+        self._toolbar.export_csv.connect(self._on_export_csv)
         self._toolbar.clear_db.connect(self._on_clear_db)
+        self._toolbar.batch_delete.connect(self._on_batch_delete)
+        self._toolbar.batch_set_status.connect(self._on_batch_set_status)
         
         # 筛选栏信号
         self._filter_bar.filter_changed.connect(self._on_filter_changed)
@@ -106,6 +109,7 @@ class InvoicePage(QWidget):
         # 搜索栏信号
         self._search_bar.search_triggered.connect(self._on_search)
         self._search_bar.reset_triggered.connect(self._on_reset)
+        self._search_bar.amount_filter_changed.connect(self._on_filter_changed)
         
         # 表格信号
         self._table.row_selected.connect(self._on_row_selected)
@@ -136,7 +140,9 @@ class InvoicePage(QWidget):
             reimbursement_status=self._filter_bar.get_reimbursement_status() or None,
             date_from=self._filter_bar.get_date_from(),
             date_to=self._filter_bar.get_date_to(),
-            search_text=self._search_bar.get_search_text() or None
+            search_text=self._search_bar.get_search_text() or None,
+            amount_from=self._search_bar.get_amount_from(),
+            amount_to=self._search_bar.get_amount_to(),
         )
     
     def _update_status(self):
@@ -267,6 +273,64 @@ class InvoicePage(QWidget):
                 self._detail_panel.clear()
             else:
                 QMessageBox.warning(self, "失败", "清空数据库失败")
+    
+    def _on_batch_delete(self):
+        """批量删除选中项"""
+        selected_ids = self._table.get_selected_ids()
+        if not selected_ids:
+            QMessageBox.information(self, "提示", "请先勾选要删除的发票")
+            return
+        
+        confirmed = ConfirmDialog.confirm(
+            self,
+            "确认删除",
+            f"确定要删除选中的 {len(selected_ids)} 张发票吗？\n\n此操作不可恢复！"
+        )
+        
+        if confirmed:
+            invoice_service.delete_batch(selected_ids)
+            QMessageBox.information(self, "完成", f"已删除 {len(selected_ids)} 张发票")
+            self._load_data()
+            self._detail_panel.clear()
+    
+    def _on_batch_set_status(self, status: str):
+        """批量设置报销状态"""
+        selected_ids = self._table.get_selected_ids()
+        if not selected_ids:
+            QMessageBox.information(self, "提示", "请先勾选要操作的发票")
+            return
+        
+        confirmed = ConfirmDialog.confirm(
+            self,
+            "确认操作",
+            f"确定将选中的 {len(selected_ids)} 张发票设为「{status}」吗？"
+        )
+        
+        if confirmed:
+            from services.combo_service import combo_service
+            updated = combo_service.set_reimbursement_status(selected_ids, status)
+            QMessageBox.information(self, "完成", f"已更新 {updated} 张发票状态为「{status}」")
+            self._load_data()
+    
+    def _on_export_csv(self):
+        """导出 CSV"""
+        if not self._current_invoices:
+            QMessageBox.information(self, "提示", "没有数据可导出")
+            return
+        
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "导出 CSV",
+            f"发票数据_{__import__('datetime').datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            "CSV 文件 (*.csv)"
+        )
+        
+        if file_path:
+            success = export_service.export_to_csv(self._current_invoices, file_path)
+            if success:
+                QMessageBox.information(self, "导出成功", f"已导出到:\n{file_path}")
+            else:
+                QMessageBox.warning(self, "导出失败", "导出 CSV 失败，请重试")
     
     # === 筛选搜索事件 ===
     

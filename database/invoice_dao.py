@@ -17,6 +17,8 @@ class FilterCriteria:
     date_from: Optional[str] = None
     date_to: Optional[str] = None
     search_text: Optional[str] = None
+    amount_from: Optional[float] = None
+    amount_to: Optional[float] = None
 
 
 class InvoiceDAO:
@@ -109,6 +111,12 @@ class InvoiceDAO:
                 )
                 pattern = f"%{filters.search_text}%"
                 params.extend([pattern] * 4)
+            if filters.amount_from is not None:
+                conditions.append("total_amount >= ?")
+                params.append(filters.amount_from)
+            if filters.amount_to is not None:
+                conditions.append("total_amount <= ?")
+                params.append(filters.amount_to)
         
         where = " AND ".join(conditions) if conditions else "1=1"
         sql = f"SELECT * FROM invoices WHERE {where} ORDER BY import_time DESC"

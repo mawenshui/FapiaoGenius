@@ -19,7 +19,7 @@ def main():
     
     app = QApplication(sys.argv)
     app.setApplicationName("智票通")
-    app.setApplicationVersion("1.3.0")
+    app.setApplicationVersion("1.4.0")
     app.setStyle('Fusion')
     
     # 初始化应用配置

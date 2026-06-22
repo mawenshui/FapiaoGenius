@@ -11,8 +11,11 @@ class InvoiceToolbar(QToolBar):
     import_file = pyqtSignal()       # 导入文件
     import_folder = pyqtSignal()     # 导入文件夹
     export_excel = pyqtSignal()      # 导出 Excel
+    export_csv = pyqtSignal()        # 导出 CSV
     combo_clicked = pyqtSignal()     # 智能凑票
     clear_db = pyqtSignal()          # 清空数据库
+    batch_delete = pyqtSignal()      # 批量删除
+    batch_set_status = pyqtSignal(str)  # 批量设置状态
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -53,6 +56,40 @@ class InvoiceToolbar(QToolBar):
         combo_action.setToolTip("智能组合发票达到目标金额")
         combo_action.triggered.connect(self.combo_clicked.emit)
         self.addAction(combo_action)
+        
+        self.addSeparator()
+        
+        # 批量操作菜单
+        batch_btn = QToolButton()
+        batch_btn.setText("⚡ 批量操作")
+        batch_btn.setPopupMode(QToolButton.InstantPopup)
+        batch_btn.setStyleSheet("""
+            QToolButton {
+                padding: 5px 10px;
+                border-radius: 4px;
+            }
+            QToolButton:hover {
+                background-color: #e6f7ff;
+            }
+        """)
+        batch_menu = QMenu(batch_btn)
+        
+        delete_selected = batch_menu.addAction("🗑️ 删除选中")
+        delete_selected.triggered.connect(self.batch_delete.emit)
+        
+        batch_menu.addSeparator()
+        
+        set_processing = batch_menu.addAction("⏳ 设为报销中")
+        set_processing.triggered.connect(lambda: self.batch_set_status.emit("报销中"))
+        
+        set_done = batch_menu.addAction("✅ 设为已报销")
+        set_done.triggered.connect(lambda: self.batch_set_status.emit("已报销"))
+        
+        set_reset = batch_menu.addAction("🔄 设为未报销")
+        set_reset.triggered.connect(lambda: self.batch_set_status.emit("未报销"))
+        
+        batch_btn.setMenu(batch_menu)
+        self.addWidget(batch_btn)
         
         self.addSeparator()
         
