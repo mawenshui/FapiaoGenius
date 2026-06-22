@@ -9,24 +9,27 @@
 │                        views/ (UI 层)                        │
 │   MainWindow → Sidebar + QStackedWidget                      │
 │     ├── InvoicePage (Toolbar + FilterBar + SearchBar          │
-│     │               + InvoiceTable + DetailPanel             │
-│     │               + 拖拽导入支持)                            │
-│     ├── ComboPage (智能凑票：参数配置 + 方案表格 + 详情展开 + 一键报销) │
+│     │               + InvoiceTable + DetailPanel + PDF预览   │
+│     │               + 拖拽导入 + 批量操作 + 金额范围搜索)       │
+│     ├── ComboPage (智能凑票：参数配置 + 方案表格 + 详情 + 一键报销) │
+│     ├── StatsPage (统计报表：matplotlib 图表 + 数据总览)       │
 │     ├── RulePage (规则管理 CRUD)                              │
-│     └── SettingsPage (AI API 配置)                            │
+│     ├── AIPage (AI 识别 + 学习过程展示)                       │
+│     └── SettingsPage (AI配置 + 主题切换 + 配置迁移)           │
 │   对话框:                                                     │
 │     ├── AILearnDialog (AI 识别 + 学习 + 规则生成)              │
 │     ├── ImportResultDialog (导入结果 + AI 学习入口)            │
-│     ├── RuleDetailDialog (规则查看/编辑)                       │
 │     ├── ProgressDialog | ConfirmDialog                       │
 ├──────────────────────────────────────────────────────────────┤
 │                     services/ (业务逻辑层)                     │
-│   ImportService | ExportService | RuleService                 │
-│   InvoiceService | AIService | ComboService (凑票算法 + 排序)  │
+│   ImportService | ExportService (Excel/CSV) | RuleService     │
+│   InvoiceService | AIService | ComboService                   │
+│   StatsService | BackupService | UpdateService                │
+│   ConfigTransferService                                       │
 ├──────────────────────────────────────────────────────────────┤
 │                     parsers/ (解析引擎层)                      │
 │   ParserRegistry → XMLParser | PDFParser | OFDParser          │
-│   TextExtractor (pdfplumber/PyMuPDF)                         │
+│   TextExtractor (pdfplumber → PyMuPDF → OCR 三级降级)        │
 ├──────────────────────────────────────────────────────────────┤
 │                     database/ (数据访问层)                     │
 │   DatabaseConnection (单例) → InvoiceDAO | RuleDAO | ConfigDAO│
@@ -77,11 +80,15 @@ ai_fapiao/
 ├── services/                   # 业务逻辑层
 │   ├── __init__.py
 │   ├── import_service.py       # 导入编排 + QThread 异步
-│   ├── export_service.py       # Excel 导出 (openpyxl)
+│   ├── export_service.py       # Excel / CSV 导出
 │   ├── rule_service.py         # 规则匹配与管理
 │   ├── invoice_service.py      # 发票查询/编辑/删除
 │   ├── ai_service.py           # AI 服务 (OpenAI 兼容 API + urllib)
-│   └── combo_service.py        # 智能凑票 (回溯搜索 + 策略排序)
+│   ├── combo_service.py        # 智能凑票 (回溯搜索 + 策略排序)
+│   ├── stats_service.py        # 统计报表 (聚合查询)
+│   ├── backup_service.py       # 数据备份与恢复 (ZIP)
+│   ├── update_service.py       # 自动更新 (GitHub Release API)
+│   └── config_transfer_service.py  # 配置导入导出
 ├── config/                     # 配置管理
 │   ├── __init__.py
 │   ├── rule_manager.py         # 规则 JSON 文件读写
@@ -100,8 +107,9 @@ ai_fapiao/
 │   ├── detail_panel.py         # 详情面板（展示+编辑）
 │   ├── import_result_dialog.py # 导入结果弹窗
 │   ├── progress_dialog.py      # 导入进度弹窗
-│   ├── settings_page.py        # 设置页面
+│   ├── settings_page.py        # 设置页面 (AI配置 + 主题 + 配置迁移)
 │   ├── combo_page.py           # 智能凑票页面（参数配置 + 方案表格 + 详情 + 一键报销）
+│   ├── stats_page.py           # 统计报表页面 (matplotlib 图表)
 │   ├── rule_page.py            # 规则管理页面 (CRUD + 导入导出)
 │   ├── ai_learn_dialog.py      # AI 学习对话框 (异步识别 + 规则生成)
 │   ├── ai_page.py              # AI 识别页面（学习过程展示）
@@ -114,17 +122,20 @@ ai_fapiao/
 │   ├── __init__.py
 │   ├── file_utils.py           # 文件操作
 │   ├── crypto.py               # API Key 加密
-│   └── validators.py           # 数据验证
+│   ├── validators.py           # 数据验证
+│   └── theme_manager.py        # 主题管理器 (QSS 加载 + 切换)
 ├── tests/                      # 自动化测试 (pytest)
 │   ├── test_combo_service.py
 │   ├── test_combo_comprehensive.py
 │   ├── test_combo_closest_strategy.py
 │   ├── test_combo_full_validation.py
 │   ├── test_combo_real_world.py
-│   └── test_strategy_differences.py
+│   ├── test_strategy_differences.py
+│   └── test_v14_features.py    # v1.4 功能测试 (OCR/备份/CSV/搜索)
 ├── resources/
 │   └── styles/
-│       └── default.qss         # 全局 QSS 样式表
+│       ├── default.qss         # 浅色主题
+│       └── dark.qss            # 深色主题
 └── docs/
     ├── PRD.md                  # 产品需求文档
     ├── architecture.md         # 系统架构文档（本文件）

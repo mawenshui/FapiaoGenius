@@ -1,4 +1,4 @@
-# AI 智能发票识别管理系统 - 模块详细设计
+# 智票通 (FapiaoGenius) - 模块详细设计
 
 ## 1. 模块总览
 
@@ -6,12 +6,12 @@
 |------|------|------|------|
 | 基础设施 | `core/` | 全局配置、常量、日志、异常 | ✅ 完成 |
 | 数据模型 | `models/` | Invoice、ParseRule、AIConfig | ✅ 完成 |
-| 数据访问 | `database/` | SQLite 连接、DAO 层 | ✅ 完成 |
-| 解析引擎 | `parsers/` | 多格式发票解析 | ✅ 完成 |
+| 数据访问 | `database/` | SQLite 连接、DAO 层（含金额范围过滤） | ✅ 完成 |
+| 解析引擎 | `parsers/` | 多格式发票解析（PDF三级降级） | ✅ 完成 |
 | 配置管理 | `config/` | 规则文件管理 | ✅ 完成 |
-| 业务逻辑 | `services/` | 导入/导出/查询/AI | ✅ 完成 |
-| UI 视图 | `views/` | PyQt5 界面 | ✅ 完成 |
-| 工具函数 | `utils/` | 文件/加密/验证 | ✅ 完成 |
+| 业务逻辑 | `services/` | 导入/导出(Excel+CSV)/查询/AI/凑票/统计/备份/更新 | ✅ 完成 |
+| UI 视图 | `views/` | PyQt5 界面（6个页面 + 主题切换） | ✅ 完成 |
+| 工具函数 | `utils/` | 文件/加密/验证/主题管理 | ✅ 完成 |
 
 ---
 
@@ -529,4 +529,87 @@ RulePage (QWidget)
 - **搜索与排序职责分离**：搜索引擎负责找到差额最小的方案集合，策略仅影响排序
 - **差额最小内化**：所有模式都内置差额最小逻辑，无需单独选项
 - **模式感知剪枝**：`less` 模式超过目标即剪枝，`greater` 模式超过目标+阈值即剪枝
+
+---
+
+## 9. services/stats_service.py — 统计报表服务
+
+### 9.1 核心参数
+
+| 方法 | 返回值 | 说明 |
+|------|--------|------|
+| `by_business_type()` | `list[StatItem]` | 按业务类型聚合（金额降序） |
+| `by_invoice_type()` | `list[StatItem]` | 按发票类型聚合 |
+| `by_month()` | `list[StatItem]` | 按月份聚合（时间升序） |
+| `by_reimbursement_status()` | `list[StatItem]` | 按报销状态聚合 |
+| `summary()` | `dict` | 总览数据（总数/总额/均额/最大/最小） |
+
+### 9.2 设计原则
+
+- 纯 SQL 聚合查询，不加载全量发票到内存
+- 使用 `COALESCE` 防止 NULL 聚合结果
+
+---
+
+## 10. services/backup_service.py — 数据备份与恢复
+
+### 10.1 核心方法
+
+| 方法 | 说明 |
+|------|------|
+| `create_backup(save_path)` | ZIP 打包数据库+规则+主题配置 |
+| `restore_backup(zip_path)` | 验证元信息后恢复，自动备份当前数据 |
+| `get_default_backup_name()` | 生成带时间戳的默认文件名 |
+
+### 10.2 备份包结构
+
+```
+backup.zip
+├── backup_meta.json    # 备份元信息（版本/应用名/创建时间）
+├── invoices.db         # SQLite 数据库
+├── rules/              # 解析规则文件
+│   └── *.json
+└── theme.json          # 主题偏好
+```
+
+---
+
+## 11. services/update_service.py — 自动更新服务
+
+### 11.1 核心方法
+
+| 方法 | 说明 |
+|------|------|
+| `check_update(current_version)` | GitHub Release API 检查新版本 |
+| `download_update(url, save_path)` | 下载更新包（支持进度回调） |
+| `_compare_versions(v1, v2)` | 版本号比较（无需 packaging 库） |
+
+---
+
+## 12. services/export_service.py — 导出服务（Excel + CSV）
+
+### 12.1 核心方法
+
+| 方法 | 说明 |
+|------|------|
+| `export_to_excel(invoices, path)` | openpyxl 带格式导出 |
+| `export_to_csv(invoices, path)` | UTF-8 BOM 编码 CSV，金额两位小数 |
+
+---
+
+## 13. parsers/text_extractor.py — PDF 文本提取（三级降级）
+
+### 13.1 降级链
+
+```
+extract_text(file_path)
+  ├─ _extract_pdfplumber()    # 策略 1：pdfplumber 原始提取
+  ├─ _extract_fitz()          # 策略 2：PyMuPDF 提取
+  └─ _extract_ocr()           # 策略 3：pytesseract OCR（扫描件）
+```
+
+### 13.2 触发条件
+
+- 每级提取后检查文本长度 > 20 字符，否则降级到下一级
+- OCR 需要 `pytesseract` + `Pillow` + Tesseract 引擎（可选依赖）
 

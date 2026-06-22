@@ -1,5 +1,51 @@
 # 变更日志 (ChangeLogs)
 
+## 2026-06-21 — v1.4 智能版：OCR降级 + 批量操作 + 备份恢复 + 高级搜索 + CSV导出
+
+### 一、PDF 文本提取三级降级
+
+| 项目 | 说明 |
+|------|------|
+| 背景 | 扫描件（图片PDF）pdfplumber 无法提取文本 |
+| 方案 | `_extract_pdfplumber` → `_extract_fitz` → `_extract_ocr` (pytesseract) |
+| 文件 | `parsers/text_extractor.py` |
+
+### 二、批量操作增强
+
+| 项目 | 说明 |
+|------|------|
+| 功能 | 工具栏新增"批量操作"菜单：批量删除 / 设为报销中 / 已报销 / 未报销 |
+| 文件 | `views/toolbar.py`, `views/invoice_page.py` |
+
+### 三、数据备份与恢复
+
+| 项目 | 说明 |
+|------|------|
+| 功能 | ZIP 打包数据库 + 规则文件 + 主题配置，支持完整性验证后恢复 |
+| 文件 | `services/backup_service.py`, `views/main_window.py` |
+
+### 四、高级搜索
+
+| 项目 | 说明 |
+|------|------|
+| 功能 | 搜索栏新增金额范围过滤（¥from - ¥to） |
+| 文件 | `views/search_bar.py`, `database/invoice_dao.py`, `views/invoice_page.py` |
+
+### 五、CSV 导出
+
+| 项目 | 说明 |
+|------|------|
+| 功能 | UTF-8 BOM 编码 CSV 导出，金额两位小数 |
+| 文件 | `services/export_service.py` |
+
+### 六、测试与版本
+
+- 新增 `tests/test_v14_features.py`（16 个测试用例）
+- 全部 70 个测试通过
+- 版本号更新至 v1.4.0
+
+---
+
 ## 2026-06-21 — 凑票架构重构：差额最小内化 + UI颜色标识
 
 ### 一、凑票架构重构：差额最小逻辑内化
