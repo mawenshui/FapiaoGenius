@@ -1,0 +1,209 @@
+/* AI 智能发票识别管理系统 - 全局样式表 */
+
+/* 全局字体 */
+* {
+    font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    font-size: 13px;
+}
+
+/* 主窗口 */
+QMainWindow {
+    background-color: #fff;
+}
+
+/* 滚动条 */
+QScrollBar:vertical {
+    background-color: #f5f5f5;
+    width: 12px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #d9d9d9;
+    min-height: 30px;
+    border-radius: 6px;
+    margin: 2px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: #bfbfbf;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+QScrollBar:horizontal {
+    background-color: #f5f5f5;
+    height: 12px;
+    margin: 0;
+}
+
+QScrollBar::handle:horizontal {
+    background-color: #d9d9d9;
+    min-width: 30px;
+    border-radius: 6px;
+    margin: 2px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background-color: #bfbfbf;
+}
+
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal {
+    width: 0;
+}
+
+/* 输入框 */
+QLineEdit {
+    padding: 6px 10px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+QLineEdit:focus {
+    border-color: #1890ff;
+}
+
+QLineEdit:disabled {
+    background-color: #f5f5f5;
+    color: #999;
+}
+
+/* 下拉框 */
+QComboBox {
+    padding: 6px 10px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    background-color: #fff;
+    min-height: 20px;
+}
+
+QComboBox:hover {
+    border-color: #1890ff;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 24px;
+}
+
+QComboBox::down-arrow {
+    image: none;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid #666;
+    margin-right: 8px;
+}
+
+QComboBox QAbstractItemView {
+    border: 1px solid #d9d9d9;
+    background-color: #fff;
+    selection-background-color: #e6f7ff;
+    selection-color: #333;
+}
+
+/* 按钮 */
+QPushButton {
+    padding: 6px 16px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #333;
+}
+
+QPushButton:hover {
+    border-color: #1890ff;
+    color: #1890ff;
+}
+
+QPushButton:pressed {
+    background-color: #f5f5f5;
+}
+
+QPushButton:disabled {
+    background-color: #f5f5f5;
+    color: #999;
+    border-color: #d9d9d9;
+}
+
+/* 日期选择器 */
+QDateEdit {
+    padding: 6px 10px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+QDateEdit:hover {
+    border-color: #1890ff;
+}
+
+QDateEdit::drop-down {
+    border: none;
+    width: 24px;
+}
+
+/* 分组框 */
+QGroupBox {
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    margin-top: 10px;
+    padding-top: 15px;
+    font-weight: bold;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 10px;
+    color: #333;
+}
+
+/* 进度条 */
+QProgressBar {
+    border: none;
+    border-radius: 4px;
+    background-color: #f5f5f5;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background-color: #1890ff;
+    border-radius: 4px;
+}
+
+/* 对话框 */
+QDialog {
+    background-color: #fff;
+}
+
+/* 标签 */
+QLabel {
+    color: #333;
+}
+
+/* 复选框 */
+QCheckBox {
+    spacing: 5px;
+}
+
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #d9d9d9;
+    border-radius: 3px;
+    background-color: #fff;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #1890ff;
+    border-color: #1890ff;
+}
+
+QCheckBox::indicator:hover {
+    border-color: #1890ff;
+}

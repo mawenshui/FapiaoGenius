@@ -1,0 +1,19 @@
+{
+  "id": "builtin_111",
+  "rule_name": "电子发票（旅客运输服务）",
+  "file_format": "pdf",
+  "match_keywords": ["电子客票", "中国铁路", "12306", "铁路电子客票"],
+  "extraction_config": {
+    "invoice_number": "发票号码[：:][\\s\\S]*?(\\d{20})",
+    "invoice_date": "开票日期[：:][\\s\\S]*?([\\d]{4}年[\\d]{1,2}月[\\d]{1,2}日)",
+    "buyer_name": "购\\s*买\\s*方[\\s\\S]*?名\\s*称[：:]\\s*([^\\n\\r]+?)(?:\\s*统一|$)",
+    "seller_name": "销\\s*售\\s*方[\\s\\S]*?名\\s*称[：:]\\s*([^\\n\\r]+?)(?:\\s*统一|$)",
+    "amount_without_tax": "合\\s*计[\\s\\S]*?¥([\\d.]+)",
+    "tax_amount": "合\\s*计\\s*¥[\\d.]+\\s*¥([\\d.]+)",
+    "total_amount": "价税合计[\\s\\S]*?（小写）\\s*¥?\\s*([\\d.]+)"
+  },
+  "required_fields": ["invoice_number", "invoice_date", "total_amount"],
+  "created_at": "2026-06-17T10:00:00",
+  "updated_at": "2026-06-17T10:00:00",
+  "is_builtin": true
+}

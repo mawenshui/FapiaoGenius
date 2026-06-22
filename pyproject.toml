@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "ai-fapiao"
+version = "1.0.0"
+description = "AI 智能发票识别管理系统"
+requires-python = ">=3.9"
+dependencies = [
+    "PyQt5>=5.15.0",
+    "pdfplumber>=0.9.0",
+    "PyMuPDF>=1.23.0",
+    "openpyxl>=3.1.0",
+    "cryptography>=41.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "pytest-qt>=4.0", "pytest-cov>=4.0"]
+
+[project.scripts]
+ai-fapiao = "main:main"
+
+[tool.setuptools.packages.find]
+include = ["core*", "models*", "database*", "parsers*", "services*", "config*", "views*", "utils*"]
