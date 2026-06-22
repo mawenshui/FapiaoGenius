@@ -73,6 +73,61 @@ class SettingsPage(QWidget):
         
         layout.addWidget(ai_group)
         
+        # 主题设置组
+        theme_group = QGroupBox("外观设置")
+        theme_layout = QFormLayout(theme_group)
+        theme_layout.setSpacing(15)
+        theme_layout.setContentsMargins(15, 20, 15, 15)
+        
+        self._theme_combo = QComboBox()
+        from utils.theme_manager import ThemeManager
+        for key, name in ThemeManager.get_available_themes().items():
+            self._theme_combo.addItem(name, key)
+        # 选中当前主题
+        current = ThemeManager.get_current_theme()
+        idx = self._theme_combo.findData(current)
+        if idx >= 0:
+            self._theme_combo.setCurrentIndex(idx)
+        self._theme_combo.currentIndexChanged.connect(self._on_theme_changed)
+        theme_layout.addRow("主题:", self._theme_combo)
+        
+        layout.addWidget(theme_group)
+        
+        # 配置迁移组
+        transfer_group = QGroupBox("配置迁移")
+        transfer_layout = QHBoxLayout(transfer_group)
+        transfer_layout.setSpacing(15)
+        transfer_layout.setContentsMargins(15, 20, 15, 15)
+        
+        export_btn = QPushButton("📦 导出配置")
+        export_btn.clicked.connect(self._on_export_config)
+        export_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #52c41a; color: white;
+                padding: 8px 16px; border-radius: 4px; border: none;
+            }
+            QPushButton:hover { background-color: #73d13d; }
+        """)
+        transfer_layout.addWidget(export_btn)
+        
+        import_btn = QPushButton("📂 导入配置")
+        import_btn.clicked.connect(self._on_import_config)
+        import_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #1890ff; color: white;
+                padding: 8px 16px; border-radius: 4px; border: none;
+            }
+            QPushButton:hover { background-color: #40a9ff; }
+        """)
+        transfer_layout.addWidget(import_btn)
+        
+        transfer_layout.addStretch()
+        transfer_desc = QLabel("导出/导入 AI 配置、主题偏好和自定义规则")
+        transfer_desc.setStyleSheet("color: #999; font-size: 11px;")
+        transfer_layout.addWidget(transfer_desc)
+        
+        layout.addWidget(transfer_group)
+        
         # 保存按钮
         save_layout = QHBoxLayout()
         save_layout.addStretch()
@@ -138,3 +193,50 @@ class SettingsPage(QWidget):
             model_name=self._model_combo.currentText().strip()
         )
         ai_service.save_config(config)
+    
+    def _on_theme_changed(self, index: int):
+        """主题切换"""
+        theme_key = self._theme_combo.itemData(index)
+        if theme_key:
+            from PyQt5.QtWidgets import QApplication
+            from utils.theme_manager import ThemeManager
+            app = QApplication.instance()
+            if app:
+                ThemeManager.apply_theme(app, theme_key)
+                ThemeManager.save_theme(theme_key)
+    
+    def _on_export_config(self):
+        """导出配置"""
+        from PyQt5.QtWidgets import QFileDialog, QMessageBox
+        from services.config_transfer_service import config_transfer_service
+        
+        path, _ = QFileDialog.getSaveFileName(
+            self, "导出配置", "fapiao_genius_config.zip", "ZIP 文件 (*.zip)"
+        )
+        if path:
+            result = config_transfer_service.export_config(path)
+            if result['success']:
+                QMessageBox.information(self, "导出成功", result['message'])
+            else:
+                QMessageBox.warning(self, "导出失败", result['message'])
+    
+    def _on_import_config(self):
+        """导入配置"""
+        from PyQt5.QtWidgets import QFileDialog, QMessageBox
+        from services.config_transfer_service import config_transfer_service
+        
+        path, _ = QFileDialog.getOpenFileName(
+            self, "导入配置", "", "ZIP 文件 (*.zip)"
+        )
+        if path:
+            reply = QMessageBox.question(
+                self, "确认导入",
+                "导入将覆盖当前的 AI 配置、主题和自定义规则。\n\n确定继续？"
+            )
+            if reply == QMessageBox.Yes:
+                result = config_transfer_service.import_config(path)
+                if result['success']:
+                    QMessageBox.information(self, "导入成功", result['message'])
+                    self._load_config()  # 刷新配置显示
+                else:
+                    QMessageBox.warning(self, "导入失败", result['message'])

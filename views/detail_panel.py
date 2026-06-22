@@ -1,13 +1,16 @@
 """发票详情面板"""
 
+import os
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                               QComboBox, QLineEdit, QPushButton, QScrollArea,
                               QFormLayout, QGroupBox)
 from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtGui import QPixmap, QImage
 from models.invoice import Invoice
 from core.constants import BusinessType, InvoiceType, ReimbursementStatus, InvoiceStatus
 from views.widgets.clickable_path import ClickablePath
 from utils.file_utils import open_file
+from core.logger import logger
 
 
 class DetailPanel(QWidget):
@@ -47,6 +50,10 @@ class DetailPanel(QWidget):
         # 可编辑信息组
         self._edit_group = self._create_editable_group()
         self._content_layout.addWidget(self._edit_group)
+        
+        # PDF 预览组
+        self._preview_group = self._create_preview_group()
+        self._content_layout.addWidget(self._preview_group)
         
         # 源文件信息组
         self._file_group = self._create_file_info_group()
@@ -140,6 +147,26 @@ class DetailPanel(QWidget):
         
         return group
     
+    def _create_preview_group(self) -> QGroupBox:
+        """创建 PDF 预览组"""
+        group = QGroupBox("发票预览")
+        layout = QVBoxLayout(group)
+        layout.setSpacing(5)
+        
+        self._preview_label = QLabel()
+        self._preview_label.setAlignment(Qt.AlignCenter)
+        self._preview_label.setMinimumHeight(200)
+        self._preview_label.setMaximumHeight(400)
+        self._preview_label.setStyleSheet(
+            "background-color: #f9f9f9; border: 1px solid #e8e8e8; border-radius: 4px;"
+        )
+        self._preview_label.setText("无预览")
+        layout.addWidget(self._preview_label)
+        
+        group.hide()  # 初始隐藏，有 PDF 时才显示
+        self._preview_group_widget = group
+        return group
+    
     def _create_file_info_group(self) -> QGroupBox:
         """创建源文件信息组"""
         group = QGroupBox("源文件信息")
@@ -218,6 +245,9 @@ class DetailPanel(QWidget):
         self._path_widget.set_path(invoice.source_file_path)
         self._import_time_label.setText(f"导入时间: {invoice.import_time[:19] if invoice.import_time else '-'}")
         
+        # 尝试渲染 PDF 预览
+        self._update_pdf_preview(invoice)
+        
         # 显示内容，隐藏空状态
         self._scroll.show()
         self._empty_label.hide()
@@ -227,6 +257,53 @@ class DetailPanel(QWidget):
         self._invoice = None
         self._scroll.hide()
         self._empty_label.show()
+    
+    def _update_pdf_preview(self, invoice: Invoice):
+        """更新 PDF 首页预览"""
+        # 重置预览
+        self._preview_label.setText("无预览")
+        self._preview_label.setPixmap(QPixmap())
+        
+        if not invoice.source_file_path or not os.path.isfile(invoice.source_file_path):
+            self._preview_group_widget.hide()
+            return
+        
+        ext = os.path.splitext(invoice.source_file_path)[1].lower()
+        
+        if ext == '.pdf':
+            try:
+                import fitz  # PyMuPDF
+                doc = fitz.open(invoice.source_file_path)
+                if doc.page_count > 0:
+                    page = doc[0]
+                    # 渲染为图片（缩放以适应面板宽度）
+                    zoom = 1.5  # 1.5x 缩放获得清晰图片
+                    mat = fitz.Matrix(zoom, zoom)
+                    pix = page.get_pixmap(matrix=mat)
+                    
+                    # 转换为 QImage
+                    img = QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format_RGB888)
+                    pixmap = QPixmap.fromImage(img)
+                    
+                    # 缩放到标签宽度
+                    scaled = pixmap.scaled(
+                        self._preview_label.width() - 10,
+                        self._preview_label.maximumHeight(),
+                        Qt.KeepAspectRatio,
+                        Qt.SmoothTransformation
+                    )
+                    self._preview_label.setPixmap(scaled)
+                    self._preview_group_widget.show()
+                doc.close()
+                return
+            except Exception as e:
+                logger.debug(f"PDF 预览失败: {e}")
+                self._preview_label.setText(f"预览失败: {e}")
+                self._preview_group_widget.show()
+                return
+        
+        # 非 PDF 文件不显示预览
+        self._preview_group_widget.hide()
     
     def _on_field_changed(self, field: str, value: str):
         """字段更新"""

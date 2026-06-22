@@ -8,6 +8,7 @@ from PyQt5.QtGui import QIcon
 from views.sidebar import Sidebar
 from views.invoice_page import InvoicePage
 from views.combo_page import ComboPage
+from views.stats_page import StatsPage
 from views.rule_page import RulePage
 from views.ai_page import AIPage
 from views.settings_page import SettingsPage
@@ -45,15 +46,17 @@ class MainWindow(QMainWindow):
         # 添加页面
         self._invoice_page = InvoicePage()
         self._combo_page = ComboPage()
+        self._stats_page = StatsPage()
         self._rule_page = RulePage()
         self._ai_page = AIPage()
         self._settings_page = SettingsPage()
         
         self._stack.addWidget(self._invoice_page)   # 0
         self._stack.addWidget(self._combo_page)     # 1
-        self._stack.addWidget(self._rule_page)      # 2
-        self._stack.addWidget(self._ai_page)        # 3
-        self._stack.addWidget(self._settings_page)  # 4
+        self._stack.addWidget(self._stats_page)     # 2
+        self._stack.addWidget(self._rule_page)      # 3
+        self._stack.addWidget(self._ai_page)        # 4
+        self._stack.addWidget(self._settings_page)  # 5
         
         main_layout.addWidget(self._stack, 1)
         
@@ -70,8 +73,7 @@ class MainWindow(QMainWindow):
         self._ai_page.invoice_imported.connect(self._invoice_page.refresh)
         
         # 发票页面请求跳转到 AI 识别
-        self._invoice_page.navigate_to_ai_page.connect(self._on_navigate_to_ai)
-        
+        self._invoice_page.navigate_to_ai_page.connect(self._on_navigate_to_ai)        
         # 默认显示发票管理页面
         self._stack.setCurrentIndex(0)
     
@@ -129,6 +131,12 @@ class MainWindow(QMainWindow):
         # 帮助菜单
         help_menu = menu_bar.addMenu("帮助(&H)")
         
+        update_action = QAction("检查更新...", self)
+        update_action.triggered.connect(self._check_update)
+        help_menu.addAction(update_action)
+        
+        help_menu.addSeparator()
+        
         about_action = QAction("关于", self)
         about_action.triggered.connect(self._show_about)
         help_menu.addAction(about_action)
@@ -167,7 +175,7 @@ class MainWindow(QMainWindow):
         status_bar.addWidget(self._status_left)
         
         # 右侧信息
-        self._status_right = QLabel("v1.0.0")
+        self._status_right = QLabel("v1.3.0")
         status_bar.addPermanentWidget(self._status_right)
         
         status_bar.setStyleSheet("""
@@ -189,8 +197,12 @@ class MainWindow(QMainWindow):
         if index == 0:
             self._invoice_page.refresh()
         
+        # 切换到统计报表时刷新数据
+        if index == 2:
+            self._stats_page.refresh()
+        
         # 更新状态栏
-        page_names = ["发票管理", "智能凑票", "规则管理", "AI 识别", "设置"]
+        page_names = ["发票管理", "智能凑票", "统计报表", "规则管理", "AI 识别", "设置"]
         if 0 <= index < len(page_names):
             self._status_left.setText(f"当前页面: {page_names[index]}")
     
@@ -211,8 +223,8 @@ class MainWindow(QMainWindow):
 
     def _on_navigate_to_ai(self, file_paths: list):
         """跳转到 AI 识别页面并加载文件"""
-        self._sidebar.set_current_index(3)  # AI 识别页面索引
-        self._stack.setCurrentIndex(3)
+        self._sidebar.set_current_index(4)  # AI 识别页面索引
+        self._stack.setCurrentIndex(4)
         if file_paths:
             self._ai_page.add_files_and_start(file_paths)
     
@@ -229,7 +241,7 @@ class MainWindow(QMainWindow):
             self,
             "关于",
             "<h3>智票通</h3>"
-            "<p>版本: 1.0.0</p>"
+            "<p>版本: 1.3.0</p>"
             "<p>一款基于 AI 的智能发票识别与管理工具</p>"
             "<p>支持 XML、PDF、OFD 格式发票自动识别</p>"
             "<hr>"
@@ -247,3 +259,32 @@ class MainWindow(QMainWindow):
         from database.connection import db
         db.close()
         event.accept()
+    
+    def _check_update(self):
+        """检查更新"""
+        from PyQt5.QtWidgets import QMessageBox
+        from services.update_service import update_service
+        
+        self._status_left.setText("正在检查更新...")
+        
+        result = update_service.check_update("1.3.0")
+        
+        if result['error']:
+            QMessageBox.warning(self, "检查失败", f"无法检查更新:\n{result['error']}")
+        elif result['has_update']:
+            msg = f"发现新版本 v{result['version']}！\n\n"
+            if result['changelog']:
+                msg += f"更新内容:\n{result['changelog'][:300]}\n\n"
+            if result['download_url']:
+                msg += "是否打开下载页面？"
+                reply = QMessageBox.question(self, "发现新版本", msg)
+                if reply == QMessageBox.Yes:
+                    import webbrowser
+                    webbrowser.open(result['download_url'])
+            else:
+                msg += "暂无下载链接，请访问 GitHub Release 页面。"
+                QMessageBox.information(self, "发现新版本", msg)
+        else:
+            QMessageBox.information(self, "检查更新", "当前已是最新版本 ✓")
+        
+        self._status_left.setText("就绪")

@@ -19,7 +19,7 @@ def main():
     
     app = QApplication(sys.argv)
     app.setApplicationName("智票通")
-    app.setApplicationVersion("1.0.0")
+    app.setApplicationVersion("1.3.0")
     app.setStyle('Fusion')
     
     # 初始化应用配置
@@ -35,6 +35,10 @@ def main():
     if style_path.exists():
         with open(style_path, 'r', encoding='utf-8') as f:
             app.setStyleSheet(f.read())
+    
+    # 加载保存的主题
+    from utils.theme_manager import ThemeManager
+    ThemeManager.load_saved_theme(app)
     
     # 创建并显示主窗口
     from views.main_window import MainWindow
